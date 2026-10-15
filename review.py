@@ -421,7 +421,9 @@ def rewrite_html(raw, hosts, ctype=''):
     text = rewrite_origins(raw.decode(cs, 'replace'), hosts)
     text = re.sub(r'(<meta[^>]+content-security-policy[^>]+content=")([^"]*)',
                   lambda m: m.group(1) + patch_csp(m.group(2)), text, flags=re.I)
-    return add_frame_css(text.encode(cs, 'xmlcharrefreplace'))
+    out = text.encode(cs, 'xmlcharrefreplace')
+    # FRAME_CSS is ASCII bytes: in a UTF-16/32 page it would be garbage, and shift every character
+    return out if cs.startswith(('utf_16', 'utf_32', 'utf-16', 'utf-32')) else add_frame_css(out)
 
 
 # A phone has overlay scrollbars that take no width. The Mobile frame is an iframe in desktop Chrome,
@@ -435,13 +437,15 @@ FRAME_CSS = b'<link rel="stylesheet" media="(max-width: 600px)" href="/__review/
 
 def add_frame_css(raw):
     """Link frame.css as early as possible: after <head>, else after <html>, else after the doctype
-    (never before it, which would put the page in quirks mode)."""
+    (never before it, which would put the page in quirks mode). A response with none of the three is
+    an HTML fragment that a page fetches and inserts (htmx, Turbo, fetch + innerHTML): it is left
+    exactly as it is, since its page already has the link."""
     head = raw[:65536]
     for pat in (rb'<head(?:\s[^>]*)?>', rb'<html(?:\s[^>]*)?>', rb'<!doctype[^>]*>'):
         m = re.search(pat, head, re.I)
         if m:
             return raw[:m.end()] + FRAME_CSS + raw[m.end():]
-    return FRAME_CSS + raw
+    return raw
 
 
 # ======================================================================= HTTP handler
