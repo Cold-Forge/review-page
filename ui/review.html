@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Review</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='%237170ff'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#0b0d12; --panel:#121419; --panel2:#0e1015; --line:#22252d; --line2:#2d313b;
+    --ink:#eceef2; --dim:#a3a8b3; --dim2:#6f7480; --acc:#7170ff; --ok:#27a644; --warn:#f5a524;
+  }
+  *{box-sizing:border-box;font-style:normal}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:400 13.5px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;overflow:hidden}
+  button,select,input,textarea{font:inherit;color:inherit}
+  button{cursor:pointer}
+  .app{display:grid;grid-template-rows:52px 1fr;height:100%}
+
+  /* top bar */
+  .top{display:flex;align-items:center;gap:10px;padding:0 12px;background:var(--panel);
+    border-bottom:1px solid var(--line);min-width:0}
+  .brand{display:flex;align-items:center;gap:8px;font-weight:700;white-space:nowrap;min-width:0;max-width:220px}
+  .brand i{width:9px;height:9px;border-radius:50%;background:var(--acc);display:block;flex:none}
+  .brand span{overflow:hidden;text-overflow:ellipsis}
+  .brand small{color:var(--dim2);font-weight:600;font-size:11px}
+  .pagebox{display:flex;align-items:center;gap:4px;min-width:0;flex:0 1 380px}
+  .pagebox input{background:var(--panel2);border:1px solid var(--line2);border-radius:7px;padding:6px 9px;
+    font-size:12.5px;min-width:0;width:100%}
+  .pagebox input:focus{outline:2px solid var(--acc);outline-offset:-1px}
+  .ibtn{background:var(--panel2);border:1px solid var(--line2);border-radius:7px;width:30px;height:30px;
+    display:flex;align-items:center;justify-content:center;color:var(--dim);flex:none;padding:0;text-decoration:none}
+  .ibtn:hover{color:#fff;border-color:#3d4250}
+  .seg{display:flex;background:var(--panel2);border:1px solid var(--line2);border-radius:8px;padding:2px;gap:2px;flex:none}
+  .seg button{background:none;border:0;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:600;color:var(--dim);white-space:nowrap}
+  .seg button .k{opacity:.5;font-size:10.5px;margin-left:5px;font-weight:700}
+  .seg button.on{background:var(--acc);color:#fff}
+  .seg button.on .k{opacity:.75}
+  .tbtn{background:var(--panel2);border:1px solid var(--line2);border-radius:7px;padding:6px 11px;
+    font-size:12px;font-weight:600;white-space:nowrap;flex:none}
+  .tbtn:hover{border-color:#3d4250}
+  .tbtn.warn{background:var(--warn);border-color:var(--warn);color:#111}
+  .spacer{flex:1}
+  .save-dot{font-size:11.5px;color:var(--dim2);white-space:nowrap;text-align:right;flex:none}
+  .save-dot.on{color:var(--ok)}
+  .save-dot.bad{color:#e5484d;font-weight:700}
+
+  /* body */
+  .main{display:grid;grid-template-columns:340px 1fr;min-height:0}
+  .side{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+  .side .head{padding:11px 13px 9px;border-bottom:1px solid var(--line)}
+  .side .head h2{margin:0 0 8px;font-size:12px;font-weight:700;color:var(--dim)}
+  .filters{display:flex;gap:5px;flex-wrap:wrap}
+  .filters button{background:var(--panel2);border:1px solid var(--line2);border-radius:6px;
+    padding:3px 9px;font-size:11px;font-weight:600;color:var(--dim)}
+  .filters button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+  .list{flex:1;overflow-y:auto;overflow-x:hidden;padding:8px}
+  .empty{padding:22px 14px;color:var(--dim2);font-size:12.5px;line-height:1.7}
+  .empty b{color:var(--ink);display:block;margin-bottom:8px;font-size:13px}
+  .empty kbd,.help kbd{background:var(--panel2);border:1px solid var(--line2);border-bottom-width:2px;
+    border-radius:4px;padding:0 5px;font:inherit;font-size:11px;font-weight:700;color:var(--ink)}
+  .item{display:grid;grid-template-columns:24px 1fr;gap:9px;padding:9px 10px;border-radius:9px;
+    border:1px solid transparent;cursor:pointer;margin-bottom:3px}
+  .item:hover{background:var(--panel2);border-color:var(--line2)}
+  .item>div{min-width:0}
+  .item.done{opacity:.55}
+  .n{width:24px;height:24px;border-radius:50%;color:#fff;font-size:11.5px;font-weight:700;
+    display:flex;align-items:center;justify-content:center}
+  .item .lab{font-size:11.5px;color:var(--dim2);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .item .q{font-size:12px;color:var(--dim);border-left:2px solid var(--warn);padding:1px 0 1px 7px;margin:4px 0 2px;
+    max-height:3.2em;overflow:hidden}
+  .item .txt{font-size:13px;margin:3px 0 5px;white-space:pre-wrap;overflow-wrap:anywhere}
+  .item.done .txt{text-decoration:line-through}
+  .item .reply{font-size:12px;color:#b8f5c7;background:rgba(39,166,68,.10);border-radius:6px;padding:5px 8px;
+    margin:0 0 6px;white-space:pre-wrap;overflow-wrap:anywhere}
+  .item .reply b{color:#7ee09a;font-weight:700}
+  .meta{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+  .tag{font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--panel2);
+    border:1px solid var(--line2);color:var(--dim);white-space:nowrap;max-width:190px;overflow:hidden;text-overflow:ellipsis}
+  .tag.miss{border-color:#7a2e30;color:#ff9a9d}
+  .row-act{margin-left:auto;display:flex;gap:4px;opacity:0;transition:opacity .12s}
+  .item:hover .row-act{opacity:1}
+  .row-act button{background:none;border:1px solid var(--line2);border-radius:5px;padding:1px 7px;
+    font-size:10.5px;font-weight:700;color:var(--dim)}
+  .row-act button:hover{color:#fff;border-color:var(--dim)}
+  .side .foot{padding:10px 12px;border-top:1px solid var(--line);display:flex;gap:7px;flex-wrap:wrap}
+  .side .foot button{flex:1;background:var(--panel2);border:1px solid var(--line2);border-radius:7px;
+    padding:7px;font-size:12px;font-weight:600}
+  .side .foot .path{flex-basis:100%;color:var(--dim2);font-size:10.5px;overflow-wrap:anywhere;line-height:1.5}
+
+  /* stage */
+  .stage{background:#07080b;overflow:auto;padding:16px;min-height:0;position:relative;
+    background-image:radial-gradient(circle at 1px 1px,#161a22 1px,transparent 0);background-size:22px 22px}
+  .frames{display:flex;gap:22px;align-items:flex-start;justify-content:center;min-height:100%}
+  .frame{display:flex;flex-direction:column;gap:7px}
+  .frame .cap{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;color:var(--dim2);height:17px;
+    white-space:nowrap;overflow:hidden;min-width:0}
+  .frame .cap > *{flex:none}
+  .frame .cap b{color:var(--ink)}
+  .frame .cap .pname{color:var(--dim);font-weight:600;overflow:hidden;text-overflow:ellipsis;flex:1 1 auto;min-width:0}
+  .vp{position:relative;overflow:hidden;background:#fff;border-radius:6px;
+    box-shadow:0 24px 60px rgba(0,0,0,.55),0 0 0 1px var(--line2)}
+  .vp.phone{border-radius:24px;box-shadow:0 24px 60px rgba(0,0,0,.55),0 0 0 8px #1a1d25,0 0 0 9px #2d313b}
+  .vp iframe{border:0;display:block;transform-origin:0 0;background:#fff}
+  .loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;
+    background:#0e1015;color:var(--dim2);font-size:12px;padding:20px}
+
+  .help{position:fixed;right:12px;top:58px;width:380px;background:var(--panel);border:1px solid var(--line2);
+    border-radius:10px;padding:14px 16px;font-size:12.5px;line-height:1.75;color:var(--dim);display:none;z-index:10;
+    box-shadow:0 20px 50px rgba(0,0,0,.5)}
+  .help.on{display:block}
+  .help b{color:var(--ink)}
+  .help .sw{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px}
+  .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#121419;
+    border:1px solid var(--line2);color:#fff;padding:9px 16px;border-radius:8px;font-size:12.5px;
+    font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}
+  .toast.on{opacity:1}
+  @media (max-width:1100px){ .seg button .k{display:none} .brand{max-width:120px} .main{grid-template-columns:290px 1fr} }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="brand"><i></i><span id="name">Review</span><small id="kind"></small></div>
+    <div class="pagebox">
+      <button class="ibtn" id="prev" title="Previous page">&#8249;</button>
+      <input id="page" list="pagelist" spellcheck="false" autocomplete="off" title="Page: type a path or pick one">
+      <button class="ibtn" id="next" title="Next page">&#8250;</button>
+      <a class="ibtn" id="newtab" target="_blank" rel="noopener" title="Open this page in a new tab, without the tool">&#8599;</a>
+      <datalist id="pagelist"></datalist>
+    </div>
+    <div class="seg" id="vpseg">
+      <button data-v="both">Both</button>
+      <button data-v="desktop">Desktop</button>
+      <button data-v="mobile">Mobile</button>
+      <button data-v="fit">Fit</button>
+    </div>
+    <div class="seg" id="toolseg">
+      <button data-t="click">Click<span class="k">C</span></button>
+      <button data-t="box">Box<span class="k">V</span></button>
+      <button data-t="text">Text<span class="k">T</span></button>
+      <button data-t="browse">Browse<span class="k">B</span></button>
+    </div>
+    <button class="tbtn" id="reload" title="Reload the frames">Reload</button>
+    <button class="tbtn warn" id="rebuilt" hidden>Page rebuilt: reload</button>
+    <div class="spacer"></div>
+    <div class="save-dot" id="saved">loading</div>
+    <button class="ibtn" id="helpbtn" title="Keys and actions">?</button>
+  </div>
+
+  <div class="main">
+    <aside class="side">
+      <div class="head">
+        <h2 id="count">0 notes</h2>
+        <div class="filters" id="filters">
+          <button data-f="open" class="on">Open</button>
+          <button data-f="done">Done</button>
+          <button data-f="all">All</button>
+          <button data-f="thispage" class="on">This page only</button>
+        </div>
+      </div>
+      <div class="list" id="list"></div>
+      <div class="foot">
+        <button id="copy" title="Copies one line that points Claude at the notes file">Copy for Claude</button>
+        <button id="clear">Clear done</button>
+        <div class="path" id="path"></div>
+      </div>
+    </aside>
+    <div class="stage" id="stage"><div class="frames" id="frames"></div></div>
+  </div>
+</div>
+
+<div class="help" id="help">
+  <b>Tools</b>: <kbd>C</kbd> Click an element · <kbd>V</kbd> Box any area · <kbd>T</kbd> Text, quote exact words · <kbd>B</kbd> Browse normally<br>
+  <b>Click tool</b>: hold <kbd>Alt</kbd> while hovering to take the parent block.<br>
+  <b>In the note</b>: <kbd>Enter</kbd> saves · <kbd>Shift</kbd>+<kbd>Enter</kbd> new line · <kbd>Esc</kbd> closes ·
+  <kbd>Alt</kbd>+<kbd>1</kbd>-<kbd>5</kbd> picks the action:<br>
+  <span class="sw" style="background:#e5484d"></span>1 Remove ·
+  <span class="sw" style="background:#f5a524"></span>2 Rework ·
+  <span class="sw" style="background:#4c8dff"></span>3 Comment ·
+  <span class="sw" style="background:#a06bff"></span>4 Discuss ·
+  <span class="sw" style="background:#27a644"></span>5 Add<br>
+  <b>Scroll pages</b>: every note remembers the scroll position and, inside a pinned scene, how far through it.
+  Clicking a note in the list takes the page back to that exact moment.<br>
+  <b>Saving</b>: every note is on disk the moment you save it. There is nothing to export. Whatever you do not mark is OK.<br>
+  <b>Claude's answers</b> appear under your notes in green; done notes turn grey.
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var ACT = {
+    remove: { label: 'Remove', color: '#e5484d' }, rework: { label: 'Rework', color: '#f5a524' },
+    comment: { label: 'Comment', color: '#4c8dff' }, discuss: { label: 'Discuss', color: '#a06bff' },
+    add: { label: 'Add', color: '#27a644' }
+  };
+  /* Real device viewports: the iframe gets these exact pixel sizes and is then scaled to fit,
+     so vh units and media queries behave as on the device. Fit = the frame fills the stage, 1:1. */
+  var VPS = {
+    desktop: { w: 1440, h: 900, label: 'Desktop' },
+    mobile: { w: 390, h: 844, label: 'Mobile', phone: true },
+    fit: { label: 'Fit' }
+  };
+  var TOOLS = { c: 'click', v: 'box', t: 'text', b: 'browse' };
+
+  var state = { info: null, page: '/', view: 'both', tool: 'click', items: [], rev: -2,
+    filter: 'open', thisPage: true, pageRev: 0 };
+  var frames = [];
+  var prefKey = 'rv:prefs';
+
+  function loadPrefs() {
+    try { return JSON.parse(localStorage.getItem(prefKey) || '{}'); } catch (e) { return {}; }
+  }
+  function savePrefs() {
+    try { localStorage.setItem(prefKey, JSON.stringify({ tool: state.tool, filter: state.filter, thisPage: state.thisPage })); } catch (e) {}
+  }
+
+  /* ---------------- server ---------------- */
+  function api(name, body) {
+    var opt = body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {};
+    return fetch('/__review/api/' + name, opt).then(function (r) {
+      if (!r.ok) throw new Error(r.status + ' ' + r.statusText);
+      return r.json();
+    });
+  }
+  function markSaved(txt, cls) { var e = $('saved'); e.textContent = txt; e.className = 'save-dot' + (cls ? ' ' + cls : ''); }
+  function refresh() {
+    return api('comments').then(function (d) {
+      state.items = d.items || []; state.rev = d.rev;
+      sync(); render();
+    });
+  }
+  function mutate(name, body) {
+    markSaved('saving');
+    return api(name, body).then(refresh)
+      .then(function () { markSaved('saved', 'on'); })
+      .catch(function (e) { markSaved('SAVE FAILED: ' + e.message, 'bad'); });
+  }
+  var tt;
+  function toast(msg) { var t = $('toast'); t.textContent = msg; t.className = 'toast on'; clearTimeout(tt); tt = setTimeout(function () { t.className = 'toast'; }, 2200); }
+
+  /* ---------------- the API the annotator in each frame calls ---------------- */
+  window.RVHost = {
+    register: function (win, fapi) {
+      var f = null;
+      for (var i = 0; i < frames.length; i++) if (frames[i].iframe.contentWindow === win) f = frames[i];
+      if (!f) return null;
+      f.api = fapi;
+      f.wrap.querySelector('.loading').style.display = 'none';
+      return {
+        comments: commentsFor(f),
+        tool: state.tool,
+        scale: f.scale || 1,
+        upsert: function (p) {
+          if (!p.id) { p.page = state.page; p.viewport = f.viewport; p.vw = f.vw; p.vh = f.vh; }
+          mutate('upsert', { item: p });
+        },
+        remove: function (id) { mutate('delete', { ids: [id] }); },
+        key: function (k) { if (TOOLS[k]) setTool(TOOLS[k]); },
+        popState: function (open) { f.popOpen = open; },
+        onPins: function (missing) { f.missing = missing || []; render(); },
+        onReady: function () {}
+      };
+    }
+  };
+
+  function norm(p) {
+    p = p || '/';
+    try { p = decodeURI(p); } catch (e) { /* malformed escapes: compare as written */ }
+    return p.replace(/index\.html?$/i, '');
+  }
+  function samePage(a, b) { return norm(a) === norm(b); }
+  function commentsFor(f) {
+    return state.items.filter(function (c) { return samePage(c.page, state.page) && c.viewport === f.viewport; });
+  }
+  function sync() { frames.forEach(function (f) { if (f.api) f.api.setComments(commentsFor(f)); }); }
+
+  /* ---------------- frames ---------------- */
+  function buildFrames() {
+    var host = $('frames');
+    host.innerHTML = '';
+    frames = [];
+    var list = state.view === 'both' ? ['desktop', 'mobile'] : [state.view];
+    list.forEach(function (v) {
+      var cfg = VPS[v];
+      var wrap = document.createElement('div');
+      wrap.className = 'frame';
+      wrap.innerHTML = '<div class="cap"><b>' + cfg.label + '</b><span class="dim"></span><span class="sc"></span><span class="pname"></span></div>' +
+        '<div class="vp' + (cfg.phone ? ' phone' : '') + '"><iframe title="' + cfg.label + ' preview"></iframe>' +
+        '<div class="loading">loading</div></div>';
+      host.appendChild(wrap);
+      var f = { viewport: v, vw: cfg.w, vh: cfg.h, iframe: wrap.querySelector('iframe'), wrap: wrap, api: null, missing: [], popOpen: false };
+      frames.push(f);
+      f.iframe.addEventListener('load', function () { onFrameLoad(f); });
+      f.iframe.src = state.page;
+    });
+    layout();
+    $('newtab').href = state.page;
+    paintName();
+  }
+  function paintName() {
+    var pi = pageInfo(state.page);
+    var name = pi && pi.name && pi.name !== pi.url ? pi.name : '';
+    frames.forEach(function (f, i) { f.wrap.querySelector('.pname').textContent = name && i === 0 ? '· ' + name : ''; });
+  }
+
+  function onFrameLoad(f) {
+    var p;
+    try {
+      var loc = f.iframe.contentWindow.location;
+      if (loc.href === 'about:blank') return;
+      p = loc.pathname + loc.search;
+    } catch (e) {
+      f.wrap.querySelector('.loading').style.display = '';
+      f.wrap.querySelector('.loading').textContent = 'This page left the review origin (' + e.message + '). Use the page box to come back.';
+      return;
+    }
+    f.api = null; f.missing = []; f.popOpen = false;
+    if (!samePage(p, state.page)) {
+      // navigated inside the frame (Browse tool) or redirected: follow it, keep the other frame in step
+      state.page = p; $('page').value = p; $('newtab').href = p; state.pageRev = 0;
+      frames.forEach(function (o) {
+        if (o === f) return;
+        var op = null;
+        try { op = o.iframe.contentWindow.location.pathname + o.iframe.contentWindow.location.search; } catch (e) {}
+        if (!samePage(op, p)) o.iframe.src = p;
+      });
+      render(); paintName();
+    }
+    var d = f.iframe.contentDocument;
+    if (!d) return;
+    var s = d.createElement('script');
+    s.src = '/__review/annotator.js';
+    s.onerror = function () { f.wrap.querySelector('.loading').textContent = 'annotator.js could not load into this page'; };
+    d.documentElement.appendChild(s);
+    setTimeout(function () {
+      if (!f.api && f.iframe.contentWindow) {
+        var l = f.wrap.querySelector('.loading');
+        l.style.display = '';
+        l.textContent = 'The page loaded but the annotator did not start. Its Content-Security-Policy may block scripts from this origin.';
+      }
+    }, 4000);
+  }
+
+  function layout() {
+    if (!frames.length) return;
+    var stage = $('stage');
+    var availW = stage.clientWidth - 34;
+    var availH = stage.clientHeight - 34 - 24;
+    var scales = {};
+    if (state.view === 'fit') {
+      var f0 = frames[0];
+      f0.vw = Math.max(320, Math.round(availW)); f0.vh = Math.max(300, Math.round(availH));
+      scales.fit = 1;
+    } else if (frames.length === 1) {
+      var f1 = frames[0];
+      scales[f1.viewport] = Math.min(1, availW / f1.vw, availH / f1.vh);
+    } else {
+      var gap = 22;
+      var sM = Math.min(1, availH / VPS.mobile.h);
+      var sD = Math.min(1, availH / VPS.desktop.h, (availW - gap - VPS.mobile.w * sM) / VPS.desktop.w);
+      if (sD < 0.42) {
+        var u = Math.min(availH / VPS.desktop.h, (availW - gap) / (VPS.desktop.w + VPS.mobile.w));
+        sD = u; sM = Math.min(1, u * 1.15);
+      }
+      scales.desktop = Math.max(0.2, sD);
+      scales.mobile = Math.max(0.2, sM);
+    }
+    frames.forEach(function (f) {
+      var s = scales[f.viewport];
+      f.scale = s;
+      if (f.api && f.api.setScale) f.api.setScale(s);
+      var vp = f.wrap.querySelector('.vp');
+      vp.style.width = Math.round(f.vw * s) + 'px';
+      vp.style.height = Math.round(f.vh * s) + 'px';
+      f.wrap.querySelector('.cap').style.width = Math.round(f.vw * s) + 'px';
+      f.iframe.style.width = f.vw + 'px';
+      f.iframe.style.height = f.vh + 'px';
+      f.iframe.style.transform = s < 0.999 ? 'scale(' + s.toFixed(4) + ')' : 'none';
+      f.wrap.querySelector('.dim').textContent = f.vw + ' × ' + f.vh;
+      f.wrap.querySelector('.sc').textContent = '· ' + Math.round(s * 100) + ' %';
+    });
+  }
+  var lt;
+  window.addEventListener('resize', function () { clearTimeout(lt); lt = setTimeout(layout, 80); });
+
+  /* ---------------- sidebar ---------------- */
+  function visible() {
+    return state.items.filter(function (c) {
+      if (state.thisPage && !samePage(c.page, state.page)) return false;
+      if (state.filter === 'open' && c.status === 'done') return false;
+      if (state.filter === 'done' && c.status !== 'done') return false;
+      return true;
+    });
+  }
+  function scrollTag(c) {
+    var s = c.scroll || {};
+    if (s.track && s.track.progress != null) return Math.round(s.track.progress * 100) + ' % · ' + (s.track.label || 'pinned scene');
+    if (s.progress != null) return 'scroll ' + Math.round(s.progress * 100) + ' %';
+    return '';
+  }
+  function isMissing(c) {
+    return frames.some(function (f) { return f.viewport === c.viewport && f.missing.indexOf(c.id) >= 0; });
+  }
+  function openCount() {
+    return state.items.filter(function (c) { return c.status !== 'done'; }).length;
+  }
+
+  function render() {
+    var rows = visible();
+    $('count').textContent = state.items.length + ' notes · ' + openCount() + ' open';
+    var list = $('list');
+    list.innerHTML = '';
+    if (!rows.length) {
+      list.innerHTML = '<div class="empty"><b>' + (state.items.length ? 'Nothing in this filter.' : 'No notes yet.') + '</b>' +
+        '<kbd>C</kbd> Click: hover names each element, click it and write what should change.<br>' +
+        '<kbd>V</kbd> Box: drag over any area, a canvas, part of an image, a gap.<br>' +
+        '<kbd>T</kbd> Text: select words and they are quoted exactly.<br>' +
+        '<kbd>B</kbd> Browse: use the page normally.<br><br>' +
+        'Every note is saved to disk at once. Whatever you leave unmarked is OK.</div>';
+      return;
+    }
+    rows.sort(function (a, b) { return a.n - b.n; });
+    rows.forEach(function (c) {
+      var act = ACT[c.action] || ACT.rework;
+      var el = document.createElement('div');
+      el.className = 'item' + (c.status === 'done' ? ' done' : '');
+      el.innerHTML = '<div class="n"></div><div><div class="lab"></div><div class="q"></div><div class="txt"></div>' +
+        '<div class="reply"><b>Claude:</b> <span></span></div>' +
+        '<div class="meta"><span class="tag act"></span><span class="tag where"></span><span class="tag tvp"></span>' +
+        '<span class="tag miss">not found on the page</span>' +
+        '<span class="row-act"><button class="d"></button><button class="e">edit</button><button class="x">del</button></span></div></div>';
+      var n = el.querySelector('.n');
+      n.textContent = c.n;
+      n.style.background = c.status === 'done' ? '#4b4f59' : act.color;
+      var what = c.kind === 'text' ? 'Text' : (c.label || '');
+      el.querySelector('.lab').textContent = (c.section && what.indexOf(c.section) < 0 ? c.section + ' · ' : '') + what;
+      var q = el.querySelector('.q');
+      if (c.kind === 'text' && c.quote) q.textContent = c.quote; else q.remove();
+      el.querySelector('.txt').textContent = c.comment || '(no note)';
+      if (c.reply) el.querySelector('.reply span').textContent = c.reply; else el.querySelector('.reply').remove();
+      var tagAct = el.querySelector('.act');
+      tagAct.textContent = act.label; tagAct.style.color = act.color;
+      var w = scrollTag(c);
+      if (w) el.querySelector('.where').textContent = w; else el.querySelector('.where').remove();
+      el.querySelector('.tvp').textContent = c.viewport + (samePage(c.page, state.page) ? '' : ' · ' + c.page);
+      if (!isMissing(c)) el.querySelector('.miss').remove();
+      el.querySelector('.d').textContent = c.status === 'done' ? 'reopen' : 'done';
+      el.addEventListener('click', function (ev) { if (ev.target.tagName !== 'BUTTON') focus(c, false); });
+      el.querySelector('.d').addEventListener('click', function () {
+        mutate('status', { ids: [c.id], status: c.status === 'done' ? 'open' : 'done' });
+      });
+      el.querySelector('.e').addEventListener('click', function () { focus(c, true); });
+      el.querySelector('.x').addEventListener('click', function () { mutate('delete', { ids: [c.id] }); });
+      list.appendChild(el);
+    });
+  }
+
+  function whenReady(fn) {
+    var t0 = Date.now();
+    (function wait() {
+      if (frames.length && frames.every(function (f) { return f.api; })) return setTimeout(fn, 250);
+      if (Date.now() - t0 > 10000) return fn();
+      setTimeout(wait, 150);
+    })();
+  }
+  function focus(c, edit) {
+    var rebuilt = false;
+    var vp = VPS[c.viewport] ? c.viewport : 'desktop';     // a note from an older tool may name none
+    if (!frames.some(function (f) { return f.viewport === vp; })) {
+      // a fit note needs the fit frame; a desktop or mobile note is already shown by Both
+      if (vp === 'fit') state.view = 'fit';
+      else if (state.view !== 'both') state.view = vp;
+      paintSeg(); rebuilt = true;
+    }
+    if (!samePage(c.page, state.page)) { state.page = c.page; $('page').value = c.page; state.pageRev = 0; rebuilt = true; }
+    if (rebuilt) { buildFrames(); render(); }
+    whenReady(function () {
+      var f = frames.filter(function (x) { return x.viewport === vp; })[0];
+      if (!f || !f.api) { toast('The frame is not ready; try again'); return; }
+      if (edit) f.api.edit(c); else f.api.focus(c);
+    });
+  }
+
+  /* ---------------- controls ---------------- */
+  function paintSeg() {
+    [].forEach.call($('vpseg').children, function (b) { b.className = b.dataset.v === state.view ? 'on' : ''; });
+    [].forEach.call($('toolseg').children, function (b) { b.className = b.dataset.t === state.tool ? 'on' : ''; });
+  }
+  function setTool(t) {
+    state.tool = t; paintSeg(); savePrefs();
+    frames.forEach(function (f) { if (f.api) f.api.setTool(t); });
+  }
+  function pageInfo(url) {
+    var ps = (state.info && state.info.pages) || [];
+    for (var i = 0; i < ps.length; i++) if (samePage(ps[i].url, url)) return ps[i];
+    return null;
+  }
+  function setPage(url) {
+    if (!url) return;
+    if (url.charAt(0) !== '/') url = '/' + url;
+    var before = pageInfo(state.page), after = pageInfo(url);
+    if (after && before && after.view !== before.view) { state.view = after.view; paintSeg(); }
+    state.page = url; state.pageRev = 0;
+    $('page').value = url;
+    $('rebuilt').hidden = true;
+    buildFrames(); render();
+  }
+  function step(d) {
+    var ps = (state.info && state.info.pages) || [];
+    var i = -1;
+    for (var k = 0; k < ps.length; k++) if (samePage(ps[k].url, state.page)) i = k;
+    var j = Math.min(ps.length - 1, Math.max(0, i + d));
+    if (ps[j] && j !== i) setPage(ps[j].url);
+  }
+
+  $('page').addEventListener('change', function () { setPage(this.value.trim()); });
+  // Enter only blurs: the blur fires 'change', which loads the page once
+  $('page').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); this.blur(); } });
+  $('prev').addEventListener('click', function () { step(-1); });
+  $('next').addEventListener('click', function () { step(1); });
+  $('vpseg').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    state.view = b.dataset.v; paintSeg(); buildFrames();
+  });
+  $('toolseg').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    setTool(b.dataset.t);
+  });
+  function reloadFrames() { $('rebuilt').hidden = true; state.pageRev = 0; buildFrames(); }
+  $('reload').addEventListener('click', reloadFrames);
+  $('rebuilt').addEventListener('click', reloadFrames);
+  $('helpbtn').addEventListener('click', function () { $('help').classList.toggle('on'); });
+  $('filters').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.f === 'thispage') state.thisPage = !state.thisPage;
+    else state.filter = b.dataset.f;
+    paintFilters(); savePrefs(); render();
+  });
+  function paintFilters() {
+    [].forEach.call($('filters').children, function (c) {
+      c.className = (c.dataset.f === 'thispage' ? state.thisPage : c.dataset.f === state.filter) ? 'on' : '';
+    });
+  }
+  $('copy').addEventListener('click', function () {
+    var line = 'Review notes for ' + state.info.name + ' (' + openCount() + ' open): ' + state.info.notes;
+    navigator.clipboard.writeText(line)
+      .then(function () { toast('Copied. Paste it to Claude.'); })
+      .catch(function () { toast('Copy blocked. The notes file: ' + state.info.notes); });
+  });
+  $('clear').addEventListener('click', function () {
+    var n = state.items.filter(function (c) { return c.status === 'done'; }).length;
+    if (!n) { toast('Nothing is marked done'); return; }
+    if (!confirm('Delete the ' + n + ' note(s) marked done?')) return;
+    mutate('clear-done', {});
+  });
+  document.addEventListener('keydown', function (e) {
+    var t = e.target;
+    if (t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    var k = (e.key || '').toLowerCase();
+    if (TOOLS[k]) { e.preventDefault(); setTool(TOOLS[k]); }
+    else if (k === '?') $('help').classList.toggle('on');
+    else if (k === 'escape') $('help').classList.remove('on');
+  });
+
+  /* poll: notes changed on disk (Claude closed or answered one) or the page was rebuilt */
+  setInterval(function () {
+    if (document.hidden || !state.info) return;
+    fetch('/__review/api/poll?page=' + encodeURIComponent(state.page)).then(function (r) { return r.json(); }).then(function (d) {
+      if (d.rev !== state.rev && !frames.some(function (f) { return f.popOpen; })) refresh();
+      if (d.pageRev) {
+        if (state.pageRev && d.pageRev !== state.pageRev) $('rebuilt').hidden = false;
+        if (!state.pageRev) state.pageRev = d.pageRev;
+      }
+      if ($('saved').className.indexOf('bad') >= 0 && $('saved').textContent.indexOf('server') >= 0) markSaved('reconnected', 'on');
+    }).catch(function () { markSaved('server stopped: relaunch open-review.cmd', 'bad'); });
+  }, 2000);
+
+  /* ---------------- boot ---------------- */
+  Promise.all([api('info'), api('comments')]).then(function (res) {
+    var info = res[0];
+    state.info = info;
+    document.title = 'Review · ' + info.name;
+    $('name').textContent = info.name;
+    $('kind').textContent = { site: 'site', docs: 'documents', html: 'document', pdf: 'PDF', url: 'live URL' }[info.kind] || info.kind;
+    $('path').textContent = 'Saved on every click to ' + info.notes;
+    Object.keys(info.session || {}).forEach(function (k) { try { sessionStorage.setItem(k, info.session[k]); } catch (e) {} });
+    Object.keys(info.local || {}).forEach(function (k) { try { localStorage.setItem(k, info.local[k]); } catch (e) {} });
+    var dl = $('pagelist');
+    (info.pages || []).forEach(function (p) {
+      var o = document.createElement('option');
+      o.value = p.url;
+      if (p.name && p.name !== p.url) o.label = p.name;
+      dl.appendChild(o);
+    });
+    var pr = loadPrefs() || {};
+    state.tool = pr.tool && pr.tool !== 'browse' ? pr.tool : 'click';
+    if (pr.filter) state.filter = pr.filter;
+    if (pr.thisPage === false) state.thisPage = false;
+    state.page = info.start || '/';
+    var first = pageInfo(state.page);
+    state.view = first ? first.view : 'both';
+    $('page').value = state.page;
+    state.items = res[1].items || []; state.rev = res[1].rev;
+    paintSeg(); paintFilters();
+    buildFrames(); render();
+    markSaved(state.items.length + ' notes loaded', 'on');
+  }).catch(function (e) { markSaved('cannot reach the review server: ' + e.message, 'bad'); });
+})();
+</script>
+</body>
+</html>
