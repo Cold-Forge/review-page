@@ -87,6 +87,14 @@ The review copy is generated: never commit it.
 
 ## 4. Gotchas (all hit while building it)
 
+- **The Mobile frame must lay out at the full 390 px.** It is an iframe inside desktop Chrome, whose classic
+  scrollbar took 15 px, so pages laid out at 375 and Dave marked a "regression" that was the tool's (2026-10-16:
+  the RR hero headline grew from 58 to 294 px tall). The server links `ui/frame.css` into every reviewed HTML page
+  with `media="(max-width: 600px)"`, hiding scrollbars in narrow frames from the first layout, as on a phone.
+  `e2e.mjs` runs with real scrollbars and checks the 390. When a phone note looks like a layout bug, compare the
+  page at a true 390 px before changing the site. Pointer media (`hover: none`, `pointer: coarse`) cannot be
+  emulated in an iframe: the phone frame still answers as a mouse device.
+
 - **Start servers with `--detach`.** It creates the process through WMI (`Win32_Process.Create`), outside every
   shell and job. Servers started with plain Popen from Git Bash died when a later pipeline in the same shell
   closed. `server.log` in the store says "not in a job" when the start is clean.
