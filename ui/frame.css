@@ -1,0 +1,9 @@
+/* review-page: linked into every reviewed HTML page with media="(max-width: 600px)", so it only
+   applies in the Mobile frame. A phone's scrollbars overlay the page and take no width; the frame's
+   desktop scrollbars took 15px and the page laid out at 375px instead of 390. Scrolling still works. */
+:root, * {
+  scrollbar-width: none !important;
+}
+::-webkit-scrollbar {
+  display: none !important;
+}

@@ -41,7 +41,9 @@ const items = () => {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const chrome = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
-const browser = await chromium.launch({ headless: true, executablePath: chrome });
+// Real scrollbars, as on Dave's desktop: Playwright hides them by default, and that hid the bug where
+// the phone frame's own scrollbar narrowed the page to 375 px (the check in section 5).
+const browser = await chromium.launch({ headless: true, executablePath: chrome, ignoreDefaultArgs: ['--hide-scrollbars'] });
 const ctx = await browser.newContext({ viewport: { width: 1680, height: 1000 } });
 const page = await ctx.newPage();
 const errors = [];
@@ -203,6 +205,8 @@ await sleep(300);
 
 // 5. mobile frame
 if (VIEW === 'both') {
+  const layoutW = await (await frameOf(1)).evaluate(() => document.documentElement.clientWidth);
+  ok(layoutW === 390, 'phone frame lays out at the full 390 px, no desktop scrollbar (frame.css)', { clientWidth: layoutW });
   await page.mouse.click(5, 300);
   await page.keyboard.press('c');
   await sleep(300);

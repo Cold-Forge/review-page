@@ -421,7 +421,27 @@ def rewrite_html(raw, hosts, ctype=''):
     text = rewrite_origins(raw.decode(cs, 'replace'), hosts)
     text = re.sub(r'(<meta[^>]+content-security-policy[^>]+content=")([^"]*)',
                   lambda m: m.group(1) + patch_csp(m.group(2)), text, flags=re.I)
-    return text.encode(cs, 'xmlcharrefreplace')
+    return add_frame_css(text.encode(cs, 'xmlcharrefreplace'))
+
+
+# A phone has overlay scrollbars that take no width. The Mobile frame is an iframe in desktop Chrome,
+# whose classic scrollbar took 15px, so the page laid out at 375px instead of 390 (2026-10-16: the RR
+# hero headline wrapped from 58 to 294px tall, and Dave marked it as a regression it was not). The
+# stylesheet is linked, not inlined, so a CSP that allows 'self' styles keeps it, and it is scoped to
+# narrow frames by its media query, so it is in force from the first layout and the desktop frame
+# keeps its real scrollbar.
+FRAME_CSS = b'<link rel="stylesheet" media="(max-width: 600px)" href="/__review/frame.css">'
+
+
+def add_frame_css(raw):
+    """Link frame.css as early as possible: after <head>, else after <html>, else after the doctype
+    (never before it, which would put the page in quirks mode)."""
+    head = raw[:65536]
+    for pat in (rb'<head(?:\s[^>]*)?>', rb'<html(?:\s[^>]*)?>', rb'<!doctype[^>]*>'):
+        m = re.search(pat, head, re.I)
+        if m:
+            return raw[:m.end()] + FRAME_CSS + raw[m.end():]
+    return FRAME_CSS + raw
 
 
 # ======================================================================= HTTP handler
@@ -585,13 +605,21 @@ class Handler(BaseHTTPRequestHandler):
         if not hit:
             nf = os.path.join(self.T.root, '404.html')
             if os.path.exists(nf):
-                return self.send_path(nf, 404)
+                return self.send_page(nf, 404)
             return self.send_text(404, 'not found: %s' % path)
         full, add_slash = hit
         if add_slash:
             q = urllib.parse.urlsplit(self.path).query
             return self.redirect(urllib.parse.quote(path) + '/' + ('?' + q if q else ''))
-        return self.send_path(full)
+        return self.send_page(full)
+
+    def send_page(self, full, code=200):
+        """A reviewed file: HTML gets frame.css linked in (see FRAME_CSS); anything else goes as is."""
+        ctype = mime_of(full)
+        if not ctype.startswith('text/html'):
+            return self.send_path(full, code)
+        with open(full, 'rb') as f:
+            return self.send_bytes(code, add_frame_css(f.read()), ctype)
 
     def serve_pdf(self, path):
         m = re.match(r'^/__pdf/([^/]+)(/.*)?$', path)
@@ -606,7 +634,10 @@ class Handler(BaseHTTPRequestHandler):
             render_pdf(pdf, out_dir, os.path.basename(pdf))
         except Exception as e:
             return self.send_text(500, 'could not render %s: %s' % (pdf, e))
-        return self.serve_file(out_dir, m.group(2).lstrip('/') or 'index.html')
+        full = inside(out_dir, (m.group(2).lstrip('/') or 'index.html').replace('/', os.sep))
+        if not full or not os.path.isfile(full):
+            return self.send_text(404, 'not found: %s' % m.group(2))
+        return self.send_page(full)
 
     # ---- proxy (URL targets)
     def proxy(self):
