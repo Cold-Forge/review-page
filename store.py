@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """review-page: the notes store, shared by the server (review.py) and the CLI (notes.py).
 
-One review = one folder under REVIEWS_ROOT (default D:/WORK/.claude/reviews/<slug>/):
+One review = one folder under REVIEWS_ROOT (default ~/.review-page/reviews/<slug>/; see CONFIG below):
 
     comments.json     the notes; the server and notes.py both edit it under a file lock
     REVIEW-NOTES.md   regenerated on every change; this is what Claude reads
@@ -22,11 +22,35 @@ import time
 from contextlib import contextmanager
 from datetime import datetime
 
-REVIEWS_ROOT = os.environ.get('REVIEW_PAGE_HOME') or r'D:\WORK\.claude\reviews'
+TOOL_DIR = os.path.dirname(os.path.abspath(__file__))
+CONFIG_FILE = os.path.join(TOOL_DIR, 'config.local.json')
+
+
+def _load_config():
+    """config.local.json next to the tool: this machine's settings, kept out of git.
+    A missing file is fine; a broken one stops here, so reviews never land in the wrong folder."""
+    if not os.path.exists(CONFIG_FILE):
+        return {}
+    try:
+        with io.open(CONFIG_FILE, encoding='utf-8-sig') as f:
+            cfg = json.load(f)
+    except (OSError, ValueError) as e:
+        raise SystemExit('review-page: cannot read %s: %s' % (CONFIG_FILE, e))
+    if not isinstance(cfg, dict):
+        raise SystemExit('review-page: %s must hold a JSON object' % CONFIG_FILE)
+    return cfg
+
+
+CONFIG = _load_config()
+# where reviews live: $REVIEW_PAGE_HOME, else "home" in config.local.json, else ~/.review-page/reviews
+REVIEWS_ROOT = (os.environ.get('REVIEW_PAGE_HOME') or CONFIG.get('home')
+                or os.path.join(os.path.expanduser('~'), '.review-page', 'reviews'))
+# who writes the notes, as REVIEW-NOTES.md names them
+REVIEWER = CONFIG.get('reviewer') or 'the reviewer'
 
 ACTIONS = ['discuss', 'remove', 'rework', 'add', 'comment']     # REVIEW-NOTES.md section order
 ACTION_HINT = {
-    'discuss': 'interview Dave before touching anything',
+    'discuss': 'interview %s before touching anything' % REVIEWER,
     'remove': 'take it out',
     'rework': 'change it as the note says',
     'add': 'something is missing here',
@@ -274,7 +298,7 @@ def write_notes(sdir, data=None):
     L.append('Generated %s by review-page. Do not hand-edit; use notes.py to close or answer notes.'
              % datetime.now().strftime('%Y-%m-%d %H:%M'))
     L.append('')
-    L.append('**%d open / %d done.** Whatever Dave did not mark is OK.' % (len(open_items), len(done_items)))
+    L.append('**%d open / %d done.** Whatever %s did not mark is OK.' % (len(open_items), len(done_items), REVIEWER))
     L.append('')
     for act in ACTIONS:
         rows = [i for i in open_items if i.get('action') == act]

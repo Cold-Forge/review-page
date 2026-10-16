@@ -14,9 +14,10 @@
 
 The server puts the reviewed pages at "/" and the tool at "/__review/" on ONE origin, so the tool
 can reach into each preview frame and anchor notes to real elements. Notes land in
-D:/WORK/.claude/reviews/<slug>/ (comments.json + REVIEW-NOTES.md) on every click; there is no
-export step. --detach starts the server in the background so it outlives this console;
-open-review.cmd in the store folder relaunches it later.
+<reviews home>/<slug>/ (comments.json + REVIEW-NOTES.md) on every click; there is no export step.
+The reviews home is $REVIEW_PAGE_HOME, else "home" in config.local.json, else ~/.review-page/reviews.
+--detach starts the server in the background so it outlives this console; open-review.cmd
+(Windows) or open-review.sh in the store folder relaunches it later.
 
 --session / --local preset sessionStorage / localStorage on the review origin before the frames
 load (e.g. --session mt-film-seen=1 skips a once-per-session intro). URL targets block POST, PUT,
@@ -815,7 +816,9 @@ def job_note():
 
 
 def relaunch_line(sdir):
-    return 'python "%s" --resume %s --detach' % (os.path.abspath(__file__), os.path.basename(sdir))
+    py = 'python' if os.name == 'nt' else 'python3'
+    return '%s "%s" --resume %s --home "%s" --detach' % (py, os.path.abspath(__file__), os.path.basename(sdir),
+                                                       os.path.dirname(os.path.abspath(sdir)))
 
 
 def main():
@@ -830,10 +833,14 @@ def main():
     ap.add_argument('--allow-post', action='store_true')
     ap.add_argument('--resume', metavar='SLUG', help='relaunch a saved review')
     ap.add_argument('--stop', metavar='SLUG', help='stop the server of a review')
+    ap.add_argument('--home', metavar='DIR', help='reviews home for this run (default: $REVIEW_PAGE_HOME, '
+                    'else "home" in config.local.json, else ~/.review-page/reviews)')
     ap.add_argument('--log', help=argparse.SUPPRESS)      # set by --detach: write output here
     a = ap.parse_args()
     if a.log:
         sys.stdout = sys.stderr = io.open(a.log, 'a', encoding='utf-8', buffering=1)
+    if a.home:
+        S.REVIEWS_ROOT = os.path.abspath(a.home)
 
     if a.stop:
         sdir = S.store_dir(a.stop)
@@ -904,9 +911,15 @@ def main():
                   'local': local, 'allowPost': a.allow_post, 'relaunch': relaunch,
                   'updated': S.now()}
     S.write_json(files['target'], target_rec)
-    with io.open(os.path.join(sdir, 'open-review.cmd'), 'w', encoding='utf-8') as f:
-        f.write('@echo off\r\nrem Relaunch the review "%s" and open it in the browser.\r\n%s\r\n'
-                % (slug, relaunch))
+    if os.name == 'nt':
+        with io.open(os.path.join(sdir, 'open-review.cmd'), 'w', encoding='utf-8') as f:
+            f.write('@echo off\r\nrem Relaunch the review "%s" and open it in the browser.\r\n%s\r\n'
+                    % (slug, relaunch))
+    else:
+        sh = os.path.join(sdir, 'open-review.sh')
+        with io.open(sh, 'w', encoding='utf-8', newline='\n') as f:
+            f.write('#!/bin/sh\n# Relaunch the review "%s" and open it in the browser.\n%s\n' % (slug, relaunch))
+        os.chmod(sh, 0o755)
     if not os.path.exists(files['notes']):
         S.write_notes(sdir)
 
@@ -921,8 +934,10 @@ def main():
 
     if a.detach:
         # the child resumes from target.json (written above, absolute target path), because the
-        # WMI-started child runs in the tool folder where a relative target would not resolve
-        port = detach(['--resume', slug] + (['--port', str(a.port)] if a.port else []), sdir, slug)
+        # WMI-started child runs in the tool folder where a relative target would not resolve.
+        # It gets the reviews home explicitly: a WMI-started process does not inherit our environment.
+        port = detach(['--resume', slug, '--home', S.REVIEWS_ROOT] + (['--port', str(a.port)] if a.port else []),
+                      sdir, slug)
         url = review_url(port)
         print('review-page: %s' % url)
         print('  target: %s (%s)' % (raw, kind))

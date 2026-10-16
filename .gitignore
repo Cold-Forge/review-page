@@ -1,0 +1,9 @@
+# this machine's settings (reviews home, reviewer name, browser path) and test targets
+config.local.json
+test/targets.local.json
+
+node_modules/
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

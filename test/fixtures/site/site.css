@@ -1,0 +1,17 @@
+:root { --ink: #121722; --soft: #4a5466; --line: #d8dde6; --bg: #f4f6fa; --accent: #2f6fe0; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.6 system-ui, sans-serif; }
+.bar { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px;
+  border-bottom: 1px solid var(--line); background: #fff; }
+.mark { font-weight: 700; }
+a { color: var(--accent); }
+main { max-width: 760px; margin: 0 auto; padding: 0 24px; }
+section { padding: 72px 0; }
+h1 { font-size: clamp(32px, 6vw, 56px); line-height: 1.1; margin: 0 0 24px; }
+h2 { font-size: 28px; margin: 16px 0 8px; }
+p { color: var(--soft); margin: 0 0 16px; }
+.track { height: 300vh; }
+.stage { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column;
+  justify-content: center; }
+canvas { width: 100%; max-width: 480px; height: auto; border-radius: 8px; }
+.outro { min-height: 100vh; }

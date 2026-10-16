@@ -1,0 +1,15 @@
+{
+  "name": "review-page",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Click-to-comment review of built sites, HTML documents, PDFs and live URLs, with the notes on disk for Claude.",
+  "scripts": {
+    "test": "python test/regress.py --fixtures"
+  },
+  "dependencies": {
+    "playwright-core": "1.59.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

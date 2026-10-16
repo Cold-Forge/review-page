@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fixture site</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<header class="bar">
+  <span class="mark">Fixture</span>
+  <nav><a href="about.html">About this fixture</a></nav>
+</header>
+<main>
+  <section class="intro">
+    <h1>A page to test the review tool on</h1>
+    <p>This fixture is a small built site. It has a heading, body copy long enough to select, a link to a second page, and a pinned scene that holds still while the page scrolls past it.</p>
+    <p>The regression test clicks the heading, boxes an area, selects a line of this text, notes the pinned scene at a set moment, and follows the link in both frames.</p>
+  </section>
+  <section class="scene" data-review-label="Pinned scene">
+    <div class="track">
+      <div class="stage">
+        <canvas width="480" height="270" aria-hidden="true"></canvas>
+        <h2>The scene that stays put</h2>
+        <p>This frame is sticky inside a tall track, so its content depends on how far the page is scrolled.</p>
+      </div>
+    </div>
+  </section>
+  <section class="outro">
+    <h2>After the scene</h2>
+    <p>Ordinary content again, so the scene's track is only part of the page and reads as a scene, not as the whole document.</p>
+  </section>
+</main>
+<script>
+  // the canvas shows the scene's progress, so a screenshot proves which moment it was taken at
+  const track = document.querySelector('.track'), stage = document.querySelector('.stage');
+  const c = document.querySelector('canvas'), g = c.getContext('2d');
+  function draw() {
+    const travel = track.offsetHeight - stage.offsetHeight;
+    const p = Math.min(1, Math.max(0, -track.getBoundingClientRect().top / travel));
+    g.fillStyle = '#1b2230'; g.fillRect(0, 0, c.width, c.height);
+    g.fillStyle = '#4c8dff'; g.fillRect(0, c.height - 24, c.width * p, 24);
+    g.fillStyle = '#e8edf5'; g.font = '600 64px system-ui, sans-serif';
+    g.fillText(Math.round(p * 100) + ' %', 32, 120);
+  }
+  addEventListener('scroll', draw, { passive: true });
+  addEventListener('resize', draw);
+  draw();
+</script>
+</body>
+</html>

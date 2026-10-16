@@ -1,16 +1,14 @@
-// review-page: screenshot every open note at the viewport and scroll moment Dave wrote it in,
-// with the noted area outlined, so Claude sees exactly what Dave saw.
+// review-page: screenshot every open note at the viewport and scroll moment the reviewer wrote it
+// in, with the noted area outlined, so Claude sees exactly what the reviewer saw.
 //
-//   node shots.mjs --base http://127.0.0.1:8901 --store D:\WORK\.claude\reviews\<slug> [--n 3,5] [--all]
+//   node shots.mjs --base http://127.0.0.1:8901 --store <reviews home>/<slug> [--n 3,5] [--all]
 //
 // Normally run through `python notes.py <slug> shots`, which starts the review server first.
-// Writes <store>/shots/n-<n>.png and <store>/shots/index.json. playwright-core resolves from
-// D:/WORK/package.json; Chrome is the installed one.
+// Writes <store>/shots/n-<n>.png and <store>/shots/index.json. The browser comes from browser.mjs.
 import fs from 'node:fs';
 import path from 'node:path';
-import { createRequire } from 'node:module';
+import { launch } from './browser.mjs';
 
-const { chromium } = createRequire('D:/WORK/package.json')('playwright-core');
 const argv = process.argv.slice(2);
 const arg = (k, d) => (argv.includes(k) ? argv[argv.indexOf(k) + 1] : d);
 const BASE = arg('--base');
@@ -33,8 +31,7 @@ const SIZE = { desktop: [1440, 900], mobile: [390, 844] };
 const outDir = path.join(STORE, 'shots');
 fs.mkdirSync(outDir, { recursive: true });
 
-const chrome = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
-const browser = await chromium.launch({ headless: true, ...(fs.existsSync(chrome) ? { executablePath: chrome } : {}) });
+const browser = await launch();
 const contexts = new Map();
 async function contextFor(w, h) {
   const key = w + 'x' + h;

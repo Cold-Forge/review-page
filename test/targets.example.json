@@ -1,0 +1,26 @@
+[
+  {
+    "key": "site",
+    "target": "/path/to/project/dist",
+    "review_args": [],
+    "e2e_args": ["--scene", ".hero", "--scene-at", "0.5", "--text-sel", "main p"]
+  },
+  {
+    "key": "docs",
+    "target": "/path/to/deliverables",
+    "review_args": [],
+    "e2e_args": ["--view", "fit", "--click-sel", ".tl span", "--text-sel", ".tl"]
+  },
+  {
+    "key": "dev",
+    "target": "http://127.0.0.1:4321/",
+    "review_args": ["--session", "intro-seen=1"],
+    "e2e_args": ["--text-sel", "main p"]
+  },
+  {
+    "key": "live",
+    "target": "https://example.com/",
+    "review_args": [],
+    "e2e_args": ["--text-sel", "p"]
+  }
+]

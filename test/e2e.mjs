@@ -11,11 +11,10 @@
 // from zero notes, so point it at a throwaway review (zz-test-*).
 import fs from 'node:fs';
 import path from 'node:path';
-import { createRequire } from 'node:module';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { launch } from '../browser.mjs';
 
-const { chromium } = createRequire('D:/WORK/package.json')('playwright-core');
 const argv = process.argv.slice(2);
 const arg = (k, d) => (argv.includes(k) ? argv[argv.indexOf(k) + 1] : d);
 const BASE = arg('--base');
@@ -26,6 +25,7 @@ const TEXT_SEL = arg('--text-sel', 'p');
 const VIEW = arg('--view', 'both');
 const SHOT = arg('--shot');
 const TOOL = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const PYTHON = process.env.REVIEW_PAGE_PYTHON || (process.platform === 'win32' ? 'python' : 'python3');
 
 let failures = 0;
 const ok = (cond, msg, extra) => {
@@ -40,10 +40,9 @@ const items = () => {
 };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-const chrome = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
-// Real scrollbars, as on Dave's desktop: Playwright hides them by default, and that hid the bug where
-// the phone frame's own scrollbar narrowed the page to 375 px (the check in section 5).
-const browser = await chromium.launch({ headless: true, executablePath: chrome, ignoreDefaultArgs: ['--hide-scrollbars'] });
+// Real scrollbars, as on a desktop browser: Playwright hides them by default, and that hid the bug
+// where the phone frame's own scrollbar narrowed the page to 375 px (the check in section 5).
+const browser = await launch({ ignoreDefaultArgs: ['--hide-scrollbars'] });
 const ctx = await browser.newContext({ viewport: { width: 1680, height: 1000 } });
 const page = await ctx.newPage();
 const errors = [];
@@ -219,7 +218,7 @@ if (VIEW === 'both') {
 
 // 6. Claude answers + closes from the CLI; the open review picks it up by polling
 const first = items()[startCount];
-execFileSync('python', [path.join(TOOL, 'notes.py'), STORE, 'done', String(first.n), '--reply', 'E2E reply from notes.py']);
+execFileSync(PYTHON, [path.join(TOOL, 'notes.py'), STORE, 'done', String(first.n), '--reply', 'E2E reply from notes.py']);
 await sleep(3200);
 const listTxt = await page.locator('#list').innerText();
 ok(!listTxt.includes('E2E: heading note'), 'closed note left the Open list without a reload');

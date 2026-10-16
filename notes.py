@@ -10,9 +10,9 @@
                                                  viewport and scroll moment, outlined, into <store>/shots/
     python notes.py <slug> url                   the running review URL, or start it in the background
 
-<slug> is the review's folder name under D:/WORK/.claude/reviews/ (a unique part of it is enough),
-or a path to a review folder. Replies and closed notes show up in Dave's open review within two
-seconds; he sees "Claude: ..." under his note and the pin turns grey.
+<slug> is the review's folder name under the reviews home (a unique part of it is enough), or a
+path to a review folder. Replies and closed notes show up in the reviewer's open review within two
+seconds: "Claude: ..." appears under the note and its pin turns grey.
 """
 import io
 import os
